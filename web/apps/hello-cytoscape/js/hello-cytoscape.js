@@ -34,7 +34,11 @@ const GRAPH_STYLE = [
     { selector: "edge", style: { "curve-style": "haystack",
                                  "line-color": "#ddd" } },
 ];
-
+const DEFAULT_STORY = {
+  "@context": { "schema": "https://schema.org/" },
+  "@graph": []
+};
+const DEFAULT_PERSON_ELEMENT = { "@id": "person", "@type": "schema:Person" };
 
 // DOM elements
 
@@ -47,6 +51,8 @@ let layoutOptions = COSE_LAYOUT_OPTIONS;
 let layoutPromise;
 let selectedReceiverId;
 let selectedTransmitterId;
+let nodeStory = Object.assign({}, DEFAULT_STORY);
+let nodeElement = Object.assign({}, DEFAULT_PERSON_ELEMENT);
 
 
 // Initialise Cytoscape
@@ -58,8 +64,14 @@ let cy = cytoscape({
 let layout = cy.layout({ name: "cose", cy: cy });
 cy.on("tap", "node[type='receiver']", handleReceiverTap);
 cy.on("tap", "node[type='transmitter']", handleTransmitterTap);
+cy.on("touchstart", "node[type='receiver']",handleReceiverHover);
+cy.on("touchstart", "node[type='transmitter']",handleTransamitterHover);
 
+//Initialize metadata
+let metadata = document.getElementById('metadata');
 
+//Add node metadata details
+nodeStory['@graph'].push(nodeElement);
 
 // Connect to the socket.io stream and feed to beaver
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
@@ -313,4 +325,22 @@ function updateLayout(newLayoutOptions) {
   layout = cy.elements().makeLayout(layoutOptions);
   layout.run();
   layoutPromise = setTimeout(updateLayout, layoutUpdateInterval);
+}
+
+
+// Handle the hover on a receiver node
+function handleReceiverHover(evt) {
+  let node = evt.target;
+  let isNewSelectedReceiver = (node.id() !== selectedReceiverId);
+  nodeElement['schema:name'] = node.id();
+  cuttlefish.render(nodeStory, metadata);
+}
+
+
+//Handle the hover on a transmitter node
+function handleTransamitterHover(evt){
+  let node = evt.target;
+  let isNewSelectedTransmitter = (node.id() !== selectedTransmitterId);
+  nodeElement['schema:name'] = node.id();
+  cuttlefish.render(nodeStory, metadata);
 }
